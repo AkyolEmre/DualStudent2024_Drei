@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kundendaten</title>
+    <style>
+        /* Füge hier deine benutzerdefinierten CSS-Stile hinzu */
+    </style>
+</head>
+<body>
+    <h1>Kundendaten</h1>
+
+    <!-- Filteroptionen -->
+    <input type="text" id="searchInput" onkeyup="filterCustomers()" placeholder="Nach Kunden suchen...">
+    <br><br>
+
+    <!-- Filteroptionen für Testfälle -->
+    <div>
+        <button onclick="sortByName()">Nach Namen sortieren</button>
+    </div>
+    <div>
+        <label for="filterOption">Filteroption auswählen:</label>
+        <select id="filterOption" onchange="applyFilter()">
+            <option value="all">Alle Kunden anzeigen</option>
+            <option value="2021">Kunden mit Subscription Date 2021 anzeigen</option>
+            <option value="2022">Kunden mit Subscription Date 2022 anzeigen</option>
+            <!-- Weitere Filteroptionen können hier hinzugefügt werden -->
+        </select>
+    </div>
+    <br>
+
+    <!-- Tabelle zur Anzeige der Kundendaten -->
+    <table id="customerTable">
+        <thead>
+            <tr>
+                <th>Customer ID</th>
+                <th>Vorname</th>
+                <th>Nachname</th>
+                <th>Firma</th>
+                <th>Stadt</th>
+                <th>Land</th>
+                <th>Telefon 1</th>
+                <th>Telefon 2</th>
+                <th>E-Mail</th>
+                <th>Abonnementdatum</th>
+                <th>Webseite</th>
+                <th>Umsatz 2021</th>
+                <th>Umsatz 2022</th>
+            </tr>
+        </thead>
+        <tbody id="customerTableBody">
+            <!-- Hier werden die Kundeninformationen eingefügt -->
+        </tbody>
+    </table>
+
+    <script>
+        // Variable, um den aktuellen Sortierstatus zu verfolgen
+        let sortAscending = true;
+
+        // Funktion zum Laden der Kundendaten beim Start der Seite
+        window.onload = function() {
+            loadCustomerData();
+        };
+
+        // Funktion zum Laden und Anzeigen der Kundendaten
+        function loadCustomerData() {
+            fetch('/get_customers') // Endpoint zum Abrufen der Kundendaten
+                .then(response => response.json())
+                .then(data => {
+                    const customerTableBody = document.getElementById('customerTableBody');
+                    customerTableBody.innerHTML = ''; // Tabelle leeren
+                    data.forEach(customer => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${customer.customer_id}</td>
+                            <td>${customer.first_name}</td>
+                            <td>${customer.last_name}</td>
+                            <td>${customer.company}</td>
+                            <td>${customer.city}</td>
+                            <td>${customer.country}</td>
+                            <td>${customer.phone1}</td>
+                            <td>${customer.phone2}</td>
+                            <td>${customer.email}</td>
+                            <td>${customer.subscription_date}</td>
+                            <td>${customer.website}</td>
+                            <td>${customer.sales_2021}</td>
+                            <td>${customer.sales_2022}</td>
+                        `;
+                        customerTableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Fehler beim Laden der Kundendaten:', error));
+        }
+
+        // Funktion zum Filtern der Kundendaten basierend auf der Benutzereingabe
+        function filterCustomers() {
+            const input = document.getElementById('searchInput').value.toUpperCase();
+            const rows = document.getElementById('customerTableBody').getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const customerData = rows[i].getElementsByTagName('td');
+                let shouldDisplay = false;
+                for (let j = 0; j < customerData.length; j++) {
+                    const cell = customerData[j];
+                    if (cell) {
+                        const textValue = cell.textContent || cell.innerText;
+                        if (textValue.toUpperCase().indexOf(input) > -1) {
+                            shouldDisplay = true;
+                            break;
+                        }
+                    }
+                }
+                rows[i].style.display = shouldDisplay ? '' : 'none';
+            }
+        }
+
+        // Funktion zum Sortieren der Kundendaten nach Name (auf- und absteigend)
+        function sortByName() {
+            const table = document.getElementById('customerTable');
+            const rows = Array.from(table.getElementsByTagName('tr'));
+            const sortedRows = rows.slice(1).sort((a, b) => {
+                const nameA = a.getElementsByTagName('td')[1].innerText.toUpperCase();
+                const nameB = b.getElementsByTagName('td')[1].innerText.toUpperCase();
+                if (sortAscending) {
+                    return nameA.localeCompare(nameB);
+                } else {
+                    return nameB.localeCompare(nameA);
+                }
+            });
+            table.tBodies[0].append(...sortedRows);
+            
+            // Umkehren des Sortierstatus für die nächste Sortierung
+            sortAscending = !sortAscending;
+        }
+
+        // Funktion zum Anwenden des Filters basierend auf der Auswahl des Benutzers
+        function applyFilter() {
+            const filterOption = document.getElementById('filterOption').value;
+            const rows = document.getElementById('customerTableBody').getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const customerData = rows[i].getElementsByTagName('td');
+                if (filterOption === 'all') {
+                    rows[i].style.display = '';
+                } else {
+                    // Filtere Kunden basierend auf dem Subscription-Datum
+                    const subscriptionDate = customerData[9].innerText;
+                    const filterYear = parseInt(filterOption); // Wandle Option in Jahr um
+                    const isFiltered = subscriptionDate.includes(filterYear);
+                    rows[i].style.display = isFiltered ? '' : 'none';
+                }
+                // Weitere Filteroptionen können hier hinzugefügt werden
+            }
+        }
+    </script>
+</body>
+</html>
